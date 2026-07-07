@@ -1,0 +1,21 @@
+# BuildKit picks this up automatically when building with -f docker/Dockerfile
+# (Dockerfile-specific ignore file). Paths are relative to the build context,
+# which is the repository root. Only package manifests, tsconfig.json and
+# src/ are needed for the image.
+node_modules
+dist
+docs
+docker
+examples
+features
+scripts
+.claude
+.git
+.gitignore
+.env
+.env.*
+*.jsonl
+*.jsonl.*
+*.md
+CLAUDE.md
+.mcp.json

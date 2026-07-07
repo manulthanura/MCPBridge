@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mcpbridge": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcpbridge/dist/main.js"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:password@localhost:5432/mydb",
+        "MCPBRIDGE_MODE": "read-only",
+        "MCPBRIDGE_MAX_ROWS": "100"
+      }
+    }
+  }
+}
