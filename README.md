@@ -2,6 +2,8 @@
 
 A production-grade [Model Context Protocol](https://modelcontextprotocol.io) server that connects AI assistants (Claude Desktop, Cursor, Windsurf, Claude Code, …) to **PostgreSQL** — with the guardrails a real database deserves.
 
+![banner](./assets/readme.jpg)
+
 Most database MCP servers are thin wrappers around `pool.query()`. MCPBridge adds the missing production layer:
 
 - 🛡️ **Query safety validation** — DDL and multi-statement payloads are blocked; comments, string literals and dollar-quoted strings are stripped before keyword analysis so nothing can be smuggled past the validator; reads additionally run inside `READ ONLY` transactions as defence in depth.
