@@ -7,7 +7,7 @@
 │   ├── schema-exploration.feature      Schema exploration scenarios
 │   ├── guarded-writes.feature          Two-phase write confirmation scenarios
 │   ├── natural-language-search.feature NL → SQL scenarios
-│   ├── audit-logging.feature           Audit trail scenarios (+ @planned anomaly detection)
+│   ├── audit-logging.feature           Audit trail + anomaly detection scenarios
 │   └── rate-limiting.feature           Throttling scenarios
 │
 ├── src/                          All application source code
@@ -37,10 +37,12 @@
 │   │   ├── infrastructure/             SamplingSqlGenerator.ts (MCP sampling)
 │   │   └── presentation/               registerSearchTool.ts (search_data)
 │   │
-│   ├── audit/                    FEATURE: audit trail
-│   │   ├── domain/                     AuditEntry.ts
-│   │   ├── application/                AuditLogger.ts (port), AuditService.ts
-│   │   └── infrastructure/             JsonlAuditLogger.ts (rotation + redaction)
+│   ├── audit/                    FEATURE: audit trail + anomaly detection
+│   │   ├── domain/                     AuditEntry.ts, Anomaly.ts, AnomalyDetector.ts
+│   │   ├── application/                AuditLogger.ts (port), AuditService.ts, AuditReader.ts (port), DetectAnomalies.ts
+│   │   ├── infrastructure/             JsonlAuditLogger.ts (rotation + redaction), JsonlAuditReader.ts
+│   │   ├── presentation/               registerAuditTools.ts (detect_anomalies)
+│   │   └── tests/
 │   │
 │   ├── throttling/               FEATURE: rate limiting
 │   │   ├── domain/                     SlidingWindowRateLimiter.ts

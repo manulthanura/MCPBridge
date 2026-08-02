@@ -44,12 +44,18 @@ Feature: Audit trail for every database operation
     Then the query still completes normally
     And the audit failure is reported on stderr
 
-  @planned
   Scenario: Track query patterns for anomaly detection
     Given 500 queries have been logged in the past hour
-    When the anomaly detector runs over the audit trail
+    When the assistant calls "detect_anomalies"
     Then unusual patterns are flagged:
       | pattern                             | alert level |
       | 50+ queries to same table in 1 min  | warning     |
       | sequential scanning of all user IDs | high        |
       | unusual access time (3 AM)          | info        |
+    And ordinary, low-volume querying produces no anomalies
+
+  Scenario: Anomaly detection only looks at the requested lookback window
+    Given queries were logged both inside and outside the last 60 minutes
+    When the assistant calls "detect_anomalies" with lookback_minutes 60
+    Then only entries within the last 60 minutes are analyzed
+    And the response reports how many entries were analyzed

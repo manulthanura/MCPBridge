@@ -1,5 +1,7 @@
 # Architecture
 
+> A visual diagram of everything below is in [architecture.drawio.xml](architecture.drawio.xml) — open it at [diagrams.net](https://app.diagrams.net) or with the draw.io VS Code extension.
+
 MCPBridge combines **Domain-Driven Design (DDD)** with a **feature-based (vertical slice) architecture**. Code is organized by *business capability* first and technical role second: each feature is a bounded context in its own folder under `src/`, containing its own DDD layers, tests, and Gherkin specification.
 
 ## Why this style
@@ -14,7 +16,7 @@ A layer-first layout (`domain/`, `application/`, `infrastructure/` at the top) s
 | `schema-exploration` | Understanding database structure | `TableDetails`, `Relationship`, snapshot caching via `SchemaService` |
 | `guarded-writes` | Two-phase confirmed mutations | `PendingWrite` aggregate root, `RiskAssessor` domain service |
 | `search` | Natural language → SQL | `SqlGenerator` port, generated-SQL revalidation |
-| `audit` | Tamper-evident operation trail | `AuditEntry`, redaction rules |
+| `audit` | Tamper-evident operation trail + anomaly detection | `AuditEntry`, redaction rules, `AnomalyDetector` |
 | `throttling` | Per-client rate limiting | `SlidingWindowRateLimiter`, `OperationGate` |
 
 Two non-feature areas support them:
@@ -37,7 +39,7 @@ src/<feature>/
 
 Each feature's behaviour contract lives as a Gherkin specification in the root `features/` directory (standard Cucumber layout), named after the feature (e.g. `features/guarded-writes.feature`).
 
-Not every feature needs every layer (e.g. `throttling` has no infrastructure; `audit` has no presentation).
+Not every feature needs every layer (e.g. `throttling` has no infrastructure).
 
 ## Dependency rules
 

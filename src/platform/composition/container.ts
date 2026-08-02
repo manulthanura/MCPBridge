@@ -4,7 +4,10 @@
  * from configuration. Features never import this module.
  */
 import { AuditService } from '../../audit/application/AuditService.js';
+import { DetectAnomalies } from '../../audit/application/DetectAnomalies.js';
+import { AnomalyDetector } from '../../audit/domain/AnomalyDetector.js';
 import { JsonlAuditLogger } from '../../audit/infrastructure/JsonlAuditLogger.js';
+import { JsonlAuditReader } from '../../audit/infrastructure/JsonlAuditReader.js';
 import { ConfirmWrite } from '../../guarded-writes/application/ConfirmWrite.js';
 import { RejectWrite } from '../../guarded-writes/application/RejectWrite.js';
 import { RequestWrite } from '../../guarded-writes/application/RequestWrite.js';
@@ -41,6 +44,7 @@ export interface Container {
     confirmWrite: ConfirmWrite;
     rejectWrite: RejectWrite;
     searchData: SearchData;
+    detectAnomalies: DetectAnomalies;
   };
   close(): Promise<void>;
 }
@@ -57,6 +61,7 @@ export function buildContainer(config: AppConfig, sqlGenerator: SqlGenerator): C
   const gateway = new PostgresDatabaseGateway(pool, config.secrets);
   const introspector = new PostgresSchemaIntrospector(pool, config.secrets, clock);
   const auditLogger = new JsonlAuditLogger(config.auditLogPath, config.secrets);
+  const auditReader = new JsonlAuditReader(config.auditLogPath);
   const pendingWrites = new InMemoryPendingWriteStore();
   const ids = new UuidGenerator();
 
@@ -65,6 +70,7 @@ export function buildContainer(config: AppConfig, sqlGenerator: SqlGenerator): C
   const limitPolicy = new ResultLimitPolicy(config.maxRows);
   const riskAssessor = new RiskAssessor({ highRiskRowThreshold: config.highRiskRowThreshold });
   const rateLimiter = new SlidingWindowRateLimiter(clock, config.rateLimit, config.rateWindowMs);
+  const anomalyDetector = new AnomalyDetector();
 
   // Feature application services
   const audit = new AuditService(auditLogger, clock);
@@ -96,6 +102,7 @@ export function buildContainer(config: AppConfig, sqlGenerator: SqlGenerator): C
         audit,
         config.defaultSchema,
       ),
+      detectAnomalies: new DetectAnomalies(gate, auditReader, anomalyDetector, clock, audit),
     },
     close: () => gateway.close(),
   };

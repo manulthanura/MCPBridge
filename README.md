@@ -10,8 +10,11 @@ Most database MCP servers are thin wrappers around `pool.query()`. MCPBridge add
 - 🧾 **Audit logging** — every operation (success, error, blocked, rate-limited) is appended to a JSONL audit trail with timing, row counts and client identity. Credentials are redacted from every log line and error message. Logs rotate at 10 MB.
 - 🚦 **Rate limiting** — sliding-window limiter (default 100 requests/minute per client) that rejects *before* a database connection is consumed.
 - 🧠 **Schema intelligence** — row estimates from planner statistics (never `COUNT(*)`), foreign-key relationship maps with cardinality, index inventories, column statistics, sample rows — all behind a 5-minute TTL cache.
+- 🚨 **Anomaly detection** — `detect_anomalies` scans the audit trail for suspicious usage: bursts of queries against one table, sequential id-enumeration scans, and off-hours activity.
 
 ## Architecture
+
+![MCPBridge architecture](./assets/architecture.jpg)
 
 **Feature-based architecture combined with DDD.** Each core feature is a bounded context living in its own folder under `src/`, with its Gherkin specification (`.feature`), its tests, and DDD layering inside (`domain` → `application` → `infrastructure` / `presentation`). Dependencies point inward within a feature; features depend only on `shared/`, `platform/`, and other features' public modules — never on the composition root.
 
@@ -38,7 +41,11 @@ src/
 │   ├── application/          #   SearchData use case, SqlGenerator port
 │   ├── infrastructure/       #   MCP-sampling SQL generator
 │   └── presentation/         #   search_data tool
-├── audit/                    # Feature: audit trail (JSONL logger, rotation, redaction)
+├── audit/                    # Feature: audit trail (JSONL logger, rotation, redaction) + anomaly detection
+│   ├── domain/               #   AnomalyDetector: burst / sequential-scan / off-hours heuristics
+│   ├── application/          #   AuditService, DetectAnomalies use case
+│   ├── infrastructure/       #   JsonlAuditLogger, JsonlAuditReader
+│   └── presentation/         #   detect_anomalies tool
 ├── throttling/               # Feature: rate limiting (sliding window + OperationGate)
 ├── shared/                   # Shared kernel: Clock, errors, result envelope, TTL cache, formatting, test fakes
 ├── platform/                 # Cross-feature plumbing: zod config, pg pool + gateway, MCP assembly, HTTP transport, composition root
@@ -61,6 +68,7 @@ Full documentation lives in [docs/](docs/): [architecture](docs/architecture.md)
 | `write_db` | Stage an INSERT/UPDATE/DELETE; returns impact preview + `confirmation_id`. |
 | `confirm_write` | Execute a staged write (high-risk requires `acknowledge_risk=true`). |
 | `reject_write` | Cancel a staged write. |
+| `detect_anomalies` | Scan the audit trail for suspicious usage patterns (table bursts, id-scan enumeration, off-hours activity). |
 
 ## Resources & Prompts
 
@@ -94,7 +102,7 @@ Add to `claude_desktop_config.json` (or `.mcp.json` for Claude Code):
 }
 ```
 
-Restart the client — MCPBridge and its 8 tools appear immediately. Set `MCPBRIDGE_MODE=read-write` to enable the guarded write flow.
+Restart the client — MCPBridge and its 9 tools appear immediately. Set `MCPBRIDGE_MODE=read-write` to enable the guarded write flow.
 
 ### Remote (Streamable HTTP)
 
@@ -145,7 +153,7 @@ Everything is environment-driven (see `.env.example`):
 
 ```bash
 npm run dev          # run from source (tsx)
-npm test             # 65 unit tests (vitest), co-located per feature in <feature>/tests/
+npm test             # 81 unit tests (vitest), co-located per feature in <feature>/tests/
 npm run typecheck
 node scripts/smoke.mjs   # end-to-end MCP protocol smoke test over stdio
 ```

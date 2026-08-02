@@ -9,7 +9,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 const transport = new StdioClientTransport({
   command: process.execPath,
   args: ['dist/main.js'],
-  cwd: 'D:/GitHub/SixFig/New folder',
+  cwd: process.cwd(),
   env: {
     ...process.env,
     DATABASE_URL: 'postgresql://smoke:nope@127.0.0.1:59999/absent',

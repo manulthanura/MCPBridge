@@ -4,6 +4,7 @@
  * HTTP modes share identical behaviour (compatibility spec C-02).
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { registerAuditTools } from '../../audit/presentation/registerAuditTools.js';
 import { registerGuardedWrites } from '../../guarded-writes/presentation/registerWriteTools.js';
 import { registerQuerying } from '../../querying/presentation/registerQueryTools.js';
 import { registerSchemaExploration } from '../../schema-exploration/presentation/registerSchemaExploration.js';
@@ -24,6 +25,7 @@ export function buildServer(container: Container): McpServer {
       'Writes are two-phase: write_db stages the operation and returns a confirmation_id;',
       'ask the user, then call confirm_write (or reject_write). High-risk writes need acknowledge_risk=true.',
       'search_data answers natural-language questions when the client supports sampling.',
+      'detect_anomalies scans the audit trail for suspicious usage patterns.',
     ].join(' '),
   });
 
@@ -46,6 +48,7 @@ export function buildServer(container: Container): McpServer {
     rejectWrite: useCases.rejectWrite,
   });
   registerSearch(server, { searchData: useCases.searchData });
+  registerAuditTools(server, { detectAnomalies: useCases.detectAnomalies });
 
   return server;
 }

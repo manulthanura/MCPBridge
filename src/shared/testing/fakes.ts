@@ -3,6 +3,7 @@
  * is manually advanced, ids are sequential, the gateway is scriptable.
  */
 import { AuditLogger } from '../../audit/application/AuditLogger.js';
+import { AuditReader } from '../../audit/application/AuditReader.js';
 import {
   DatabaseGateway,
   GatewayQueryError,
@@ -78,6 +79,15 @@ export class FakeGateway implements DatabaseGateway {
   async ping(): Promise<void> {}
 
   async close(): Promise<void> {}
+}
+
+export class FakeAuditReader implements AuditReader {
+  entries: AuditEntry[] = [];
+
+  async readSince(since: Date): Promise<AuditEntry[]> {
+    const sinceMs = since.getTime();
+    return this.entries.filter((e) => Date.parse(e.timestamp) >= sinceMs);
+  }
 }
 
 export class SequenceIdGenerator implements IdGenerator {
