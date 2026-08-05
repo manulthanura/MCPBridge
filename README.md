@@ -1,8 +1,43 @@
+<a name="readme-top"></a>
+
 # MCPBridge
+
+[![Static Badge](https://img.shields.io/badge/Develop-Manul_Thanura-red)](https://lk.linkedin.com/in/manulthanura)
+[![Static Badge](https://img.shields.io/badge/GitHub-View_Source-181717)](https://github.com/manulthanura/MCPBridge)
+[![Static Badge](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
+[![Static Badge](https://img.shields.io/badge/Version-1.0.0-blueviolet)](https://github.com/manulthanura/MCPBridge/releases)
+
+[![Static Badge](https://img.shields.io/badge/TypeScript-blue)](https://www.typescriptlang.org/)
+[![Static Badge](https://img.shields.io/badge/PostgreSQL-blue)](https://www.postgresql.org/)
+[![Static Badge](https://img.shields.io/badge/MCP-orange)](https://modelcontextprotocol.io/)
+[![Static Badge](https://img.shields.io/badge/Docker-2496ED)](https://www.docker.com/)
 
 A production-grade [Model Context Protocol](https://modelcontextprotocol.io) server that connects AI assistants (Claude Desktop, Cursor, Windsurf, Claude Code, …) to **PostgreSQL** — with the guardrails a real database deserves.
 
 ![banner](./assets/readme.jpg)
+
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#tools">Tools</a></li>
+    <li><a href="#resources--prompts">Resources & Prompts</a></li>
+    <li><a href="#prerequisites">Prerequisites</a></li>
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#safety-model">Safety Model</a></li>
+    <li><a href="#development">Development</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgements">Acknowledgements</a></li>
+  </ol>
+</details>
+
+## Features
 
 Most database MCP servers are thin wrappers around `pool.query()`. MCPBridge adds the missing production layer:
 
@@ -13,6 +48,8 @@ Most database MCP servers are thin wrappers around `pool.query()`. MCPBridge add
 - 🚦 **Rate limiting** — sliding-window limiter (default 100 requests/minute per client) that rejects *before* a database connection is consumed.
 - 🧠 **Schema intelligence** — row estimates from planner statistics (never `COUNT(*)`), foreign-key relationship maps with cardinality, index inventories, column statistics, sample rows — all behind a 5-minute TTL cache.
 - 🚨 **Anomaly detection** — `detect_anomalies` scans the audit trail for suspicious usage: bursts of queries against one table, sequential id-enumeration scans, and off-hours activity.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Architecture
 
@@ -58,6 +95,8 @@ docs/                         # Architecture, folder structure, setup, developme
 
 Full documentation lives in [docs/](docs/): [architecture](docs/architecture.md) · [folder structure](docs/folder-structure.md) · [setup](docs/setup.md) · [development guidelines](docs/development.md).
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Tools
 
 | Tool | Description |
@@ -72,13 +111,25 @@ Full documentation lives in [docs/](docs/): [architecture](docs/architecture.md)
 | `reject_write` | Cancel a staged write. |
 | `detect_anomalies` | Scan the audit trail for suspicious usage patterns (table bursts, id-scan enumeration, off-hours activity). |
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Resources & Prompts
 
 - `schema://{schemaName}` — full schema snapshot (5-minute TTL cache)
 - `table://{name}` / `stats://{table}` / `relations://{table}` — per-table structure, statistics, relationship map
 - Prompts: `analyze-table`, `optimize-query`
 
-## Quick start
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Prerequisites
+
+- **Node.js** 18 or later
+- **npm** (bundled with Node.js)
+- A reachable **PostgreSQL** instance (13+) — or skip this and use the bundled [Docker Compose](#docker) setup, which provisions one with sample data
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Quick Start
 
 ```bash
 npm install
@@ -122,6 +173,8 @@ docker compose -f docker/docker-compose.yml up     # PostgreSQL with sample data
 docker build -f docker/Dockerfile -t mcpbridge .   # image only (repo root as context)
 ```
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Configuration
 
 Everything is environment-driven (see `.env.example`):
@@ -144,12 +197,16 @@ Everything is environment-driven (see `.env.example`):
 | `MCPBRIDGE_TRANSPORT` | `stdio` | `stdio` or `http` |
 | `MCPBRIDGE_HTTP_PORT` | `3920` | Port for the HTTP transport |
 
-## Safety model
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Safety Model
 
 1. **Domain validation (fail closed).** Statements are lexed (comments/strings blanked), classified by kind, and checked against forbidden keywords (`DROP`, `TRUNCATE`, `ALTER`, `CREATE`, `GRANT`, `COPY`, …), credential catalogs (`pg_shadow`, `pg_authid`, …), multi-statement payloads, and CTE-smuggled writes (`WITH x AS (DELETE …) SELECT …`). Anything unclassifiable is rejected.
 2. **Transactional enforcement.** Reads run in `BEGIN TRANSACTION READ ONLY` — PostgreSQL itself rejects any write that slips through. Writes run in their own transaction and roll back on failure.
 3. **Human confirmation.** Writes are staged, previewed (operation, target table, planner row estimate, risk level) and only executed on explicit confirmation — twice for high-risk operations.
 4. **Redaction everywhere.** Known secrets, connection-string passwords and `password=` pairs are scrubbed from every error message and audit line.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Development
 
@@ -162,11 +219,60 @@ node scripts/smoke.mjs   # end-to-end MCP protocol smoke test over stdio
 
 Behavioural specifications live in [features/](features/) as Gherkin files — one per feature (`features/safe-querying.feature`, `features/guarded-writes.feature`, …), following the standard Cucumber layout. They document the expected behaviour scenario by scenario and are the reference for the unit tests. See [docs/development.md](docs/development.md) for the full workflow and guidelines.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Roadmap
+
+- [x] Core tool set: safe querying, schema intelligence, guarded writes, natural-language search, audit trail, anomaly detection
+- [x] `stdio` and Streamable HTTP transports
+- [x] Docker packaging with sample dataset
+- [ ] Publish package to npm
+- [ ] Persistent pending-write store (currently in-memory, single-instance only)
+- [ ] Additional database engines (MySQL, SQLite)
+- [ ] CI pipeline (lint, typecheck, test) via GitHub Actions
+
+See the [open issues](https://github.com/manulthanura/MCPBridge/issues) for a full list of proposed features and known gaps.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Contributing
+
+Contributions make the open-source community a great place to learn and build. Any contributions are **greatly appreciated**.
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a pull request
+
+Please make sure `npm test` and `npm run typecheck` pass before opening a PR. See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/development.md](docs/development.md) for the full guidelines.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Security
+
+MCPBridge is designed to sit in front of a production database — if you find a vulnerability, please **do not** open a public issue. See [SECURITY.md](SECURITY.md) for how to report it privately.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## License
 
-MIT
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Contact
+
+Manul Thanura — [LinkedIn](https://lk.linkedin.com/in/manulthanura) · [manulthanura.com](https://manulthanura.com)
+
+Project Link: [https://github.com/manulthanura/MCPBridge](https://github.com/manulthanura/MCPBridge)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Acknowledgements
 
-MCPBridge is inspired by [Claude Desktop](https://claude.ai/desktop) and [Cursor](https://cursor.so/) and their guarded database access flows. It is not affiliated with either product. PostgreSQL is a registered trademark of the PostgreSQL Global Development Group. MCPBridge is not affiliated with the PostgreSQL project. Project by [@manulthanura](https://manulthanura.com)
+- [Best-README-Template](https://github.com/othneildrew/Best-README-Template) — structure this README is based on
+- [Claude Desktop](https://claude.ai/desktop) and [Cursor](https://cursor.so/), whose guarded database access flows inspired MCPBridge. MCPBridge is not affiliated with either product.
+- PostgreSQL is a registered trademark of the PostgreSQL Global Development Group. MCPBridge is not affiliated with the PostgreSQL project.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
